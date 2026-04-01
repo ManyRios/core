@@ -159,6 +159,45 @@ See [Security Threat Model](docs/design/02-security-threat-model.md) for full an
 - [ ] TOKEN economics
 - [ ] RBOB build system
 
+## Want to Build?
+
+Veil pays contributors with points, not promises.
+
+**How it works**: Your merged code earns RBOB points. Points are tracked with full git audit trail and convert to TOKEN at TGE. Code that survives in the codebase keeps earning. Code that gets removed stops earning. Simple.
+
+Early contributors get a **5x Genesis Bonus** — compensating for the risk of building before there's a token.
+
+```
+Your code passes tests → gets merged → earns points → TGE → points convert to TOKEN
+```
+
+### Get Started in 5 Minutes
+
+```bash
+git clone https://github.com/runveil-io/core.git
+cd core
+npm install
+npm test    # 36/36 passing
+```
+
+### Find Work
+
+- **[Good First Issues](good-first-issues.md)** — 10 scoped tasks with clear acceptance criteria
+- `grep -rn "TODO\|FIXME" src/` — every TODO is a contribution opportunity
+- Failing tests — if any test is red, fixing it earns points
+
+### Or Let Your Agent Do It
+
+```bash
+clawd build    # Scans repo, picks a task, writes code, opens PR
+```
+
+### Read More
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, PR process, RBOB details
+- [RBOB Protocol](docs/specs/rbob-protocol-v1.md) — the full rule spec
+
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.

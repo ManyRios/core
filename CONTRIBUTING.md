@@ -1,130 +1,145 @@
 # Contributing to Veil Protocol
 
-## Rules
+You write code. If it passes tests and gets merged, you earn future revenue share. That's the deal.
 
-Veil uses RBOB (Rule-Based Open Build). Four rules:
-
-```
-R1: Code that passes verification can be merged.
-R2: Merge requires at least 1 approval.
-R3: Protected modules (crypto/, contracts/) require core team review.
-R4: Merged code earns Points → future TOKEN revenue share.
-```
-
-## From source (development)
+## 5-Minute Setup
 
 ```bash
 git clone https://github.com/runveil-io/core.git
 cd core
-
 npm install
-npm test          # 36 tests, all must pass
-npm run build     # produces dist/
-
-# Dev loop (run TypeScript directly)
-npx tsx src/cli.ts relay start
-npx tsx src/cli.ts provide start
-```
-
-Note: `npx tsx ...` runs TypeScript directly. `npm run build` produces `dist/` for production.
-
-## Finding work
-
-The repository IS the task board. Work comes from three sources:
-
-```bash
-# 1. Failing tests → bugs to fix
 npm test
-
-# 2. TODO comments → improvements
-grep -rn "TODO:" src/
-
-# 3. Desired states → features to build
-ls desired/
 ```
 
-### If you are a clawd instance
+You should see `36/36 tests passing`. If you don't, you found your first contribution.
 
+**Requirements**: Node.js 22+, npm
+
+## How You Get Paid (RBOB)
+
+Veil uses the **Rule-Based Open Build** protocol. Four rules:
+
+1. **R1** — Code must pass all tests in CI
+2. **R2** — Merge requires K independent approvals (currently K=1, Kousan)
+3. **R3** — Protected modules (`crypto/`, `wallet/`) require higher threshold
+4. **R4** — Surviving code earns points. Points = future revenue share.
+
+**What "surviving" means**: your code stays in the codebase and passes tests. Dead code gets pruned, and points go with it.
+
+**Genesis Bonus**: Early contributors earn 5x points. This compensates for the risk of building before there's revenue. The bonus decreases as the protocol matures.
+
+**The economic loop**:
+```
+Your code → earns points → TGE → points convert to TOKEN → protocol revenue flows to TOKEN holders
+```
+
+Points are tracked in `contributions.db` with full git audit trail. No USDC payouts pre-TGE — points are your equity in the protocol's future.
+
+## Finding Work
+
+No separate task board. **The repo is the task board.**
+
+### 1. Failing tests
 ```bash
-$ clawd build
-# Scans the repo, finds work, writes code, submits PR
+npm test -- --reporter=verbose 2>&1 | grep FAIL
 ```
+A failing test is a bounty. Fix it, PR it, earn points.
 
-### If you are a human
+### 2. Read the code
+The codebase is ~1500 lines. You can read all of `src/` in 30 minutes. If you spot something missing or broken, that's your contribution. Check `docs/design/00-architecture-review-v0.2.md` for the planned module structure — gaps between the doc and the code are real tasks.
 
-1. Check `desired/` directory for open tasks
-2. Fork → Branch → Code → Test → PR
-3. `npm test` must pass (36/36)
-4. Wait for approval
+### 3. GitHub Issues
+Look for labels:
+- `good-first-issue` — scoped, tested, documented
+- `bounty` — has explicit point value
+- `help-wanted` — bigger items that need ownership
 
-## Protected paths
+### 4. Desired states
+Check `desired/` directory (when populated) for feature specs with acceptance criteria and bounty values.
 
-These modules require core team review (R3):
-
+### 5. Let your agent do it
+```bash
+clawd build
 ```
-src/crypto/       Envelope encryption, signatures
-src/wallet/       Key storage, encryption
-contracts/        Solana on-chain programs (future)
-```
+This scans the repo for failing tests, TODOs, and desired states, picks one, writes code, runs tests, and opens a PR. You review and submit. Or set it to `auto`.
 
-Do not modify protected paths without prior discussion.
+## Submitting a PR
 
-## Code style
+Keep it simple:
+
+1. **Fork & branch**: `git checkout -b fix/relay-timeout`
+2. **Write code + tests**: if you touch `src/`, touch `tests/`
+3. **Run tests locally**: `npm test` — all green
+4. **Open PR** with:
+   - What you changed (1-2 sentences)
+   - Which issue/TODO it addresses (if any)
+   - Test output showing pass
+
+That's it. No issue template. No commit message convention. No CLA.
+
+### PR Review
+
+- CI runs automatically. Red CI = not reviewed.
+- Currently Kousan reviews all PRs (CRL-1 stage).
+- Expect review within 24-48 hours.
+- Nits are suggestions, not blockers. Ship > perfect.
+
+## What NOT to Touch Without Discussion
+
+These modules are under R3 protection (higher review threshold):
+
+- `src/crypto/` — envelope encryption, key generation
+- `src/wallet/` — encrypted storage, KDF
+- `RULES.md` — the rules themselves
+- `contributions.db` — the points ledger
+
+Open an issue first if you want to modify these. They affect security and economics.
+
+## Code Style
 
 - TypeScript strict mode
-- No `any` types (use explicit types)
-- Structured JSON logging: `console.log(JSON.stringify({ level, msg, ...data }))`
-- Tests alongside code in `tests/` directory
-- Every new function needs at least one test
+- No `any` unless you explain why in a comment
+- Tests use vitest
+- We don't enforce a formatter yet — just be consistent with surrounding code
 
-## Commit messages
+## Tech Stack Reference
+
+| Component | Library | Why |
+|-----------|---------|-----|
+| Runtime | Node.js 22+ | LTS, AI tooling ecosystem |
+| Language | TypeScript 5.x | Strict mode, AI agents write it well |
+| HTTP | Hono | 3KB, fast |
+| WebSocket | ws | Standard |
+| Crypto | tweetnacl | Pure JS, zero native deps, audited |
+| DB | better-sqlite3 | WAL mode, zero config |
+| Tests | vitest | Fast, good DX |
+| Build | tsup | Single-file output |
+
+## Architecture (30-second version)
 
 ```
-feat: add provider health check endpoint
-fix: relay reconnection on timeout
-docs: update security threat model
-test: add streaming e2e test
+Consumer (localhost:9960)
+    → encrypts prompt with Provider's public key
+    → sends to Relay over WebSocket
+    
+Relay (wss://relay.runveil.io)
+    → verifies auth, strips identity
+    → forwards encrypted blob to Provider
+    
+Provider (your machine)
+    → decrypts prompt
+    → calls AI API (OpenAI, Anthropic, etc.)
+    → encrypts response, sends back
 ```
 
-## Testing
+Relay sees **who** but not **what**. Provider sees **what** but not **who**.
 
-```bash
-npm test              # Run all tests
-npm test -- --watch   # Watch mode
-```
+## Questions?
 
-All PRs must have:
-- [ ] `npm test` passing (36/36 minimum)
-- [ ] `npm run build` succeeds
-- [ ] No TypeScript errors
-- [ ] New code has tests
-
-## Environment variables
-
-```bash
-VEIL_HOME=~/.veil              # Config directory
-VEIL_PASSWORD=...              # Wallet password (dev only)
-ANTHROPIC_API_KEY=sk-ant-...   # Provider API key
-RELAY_PORT=8080                # Relay listen port
-GATEWAY_PORT=9960              # Consumer gateway port
-```
-
-## Security
-
-- API keys: environment variables only, never in code or config files
-- Wallet: always encrypted (scrypt + AES-256-GCM)
-- Logs: never log API keys, wallet keys, or prompt content
-- Relay: must not have access to prompt content (envelope encryption)
-
-Treat all inbound data as untrusted input.
-
-## Points (future)
-
-Contributions earn Points tracked in `contributions.db`:
-- Code merged and surviving 7+ days → Points credited
-- Points convert to TOKEN at TGE
-- Revenue share proportional to contribution
+- [Telegram](https://t.me/+XJ-ogZ9hBy44ZmFl) — fastest response
+- GitHub Issues — for anything technical
+- `clawd build` — if you'd rather let your agent ask for you
 
 ---
 
-**[runveil.io](https://runveil.io)** · [@runveil_io](https://x.com/runveil_io)
+*Your code survives → you earn. That's the only rule that matters.*
