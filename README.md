@@ -232,3 +232,17 @@ MIT
 ---
 
 **[runveil.io](https://runveil.io)** · [@runveil_io](https://x.com/runveil_io) · [Telegram](https://t.me/+XJ-ogZ9hBy44ZmFl)
+
+## Contributors
+
+Thanks to everyone building Veil.
+
+| Contributor | PRs | Points | Contributions |
+|-------------|-----|--------|---------------|
+| [@sami-openlife](https://github.com/sami-openlife) | #15, #16 | 4,500 | Config validation, Structured logging |
+| [@597226617](https://github.com/597226617) | #11 | 2,500 | CLI colors & spinner |
+| [@hopkdj](https://github.com/hopkdj) | #12 | 1,500 | Provider health endpoint |
+| [@Chronolapse411](https://github.com/Chronolapse411) | #14 | *under review* | Multi-provider selector |
+
+*Points include 5x Genesis Bonus (early contributor multiplier).*
+*Points convert to TOKEN at TGE.*
