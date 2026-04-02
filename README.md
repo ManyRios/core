@@ -239,10 +239,11 @@ Thanks to everyone building Veil.
 
 | Contributor | PRs | Points | Contributions |
 |-------------|-----|--------|---------------|
+| [@Chronolapse411](https://github.com/Chronolapse411) | #30, #31, #33 | 7,500 | Rate limiting, Consumer retry, Provider metrics |
 | [@sami-openlife](https://github.com/sami-openlife) | #15, #16 | 4,500 | Config validation, Structured logging |
-| [@597226617](https://github.com/597226617) | #11 | 2,500 | CLI colors & spinner |
+| [@597226617](https://github.com/597226617) | #11, #50 | 5,000 | CLI colors & spinner, Metering module |
+| [@grit-web3-agency](https://github.com/grit-web3-agency) | #54 | 2,500 | RBOB Points ledger |
 | [@hopkdj](https://github.com/hopkdj) | #12 | 1,500 | Provider health endpoint |
-| [@Chronolapse411](https://github.com/Chronolapse411) | #14 | *under review* | Multi-provider selector |
 
 *Points include 5x Genesis Bonus (early contributor multiplier).*
 *Points convert to TOKEN at TGE.*
