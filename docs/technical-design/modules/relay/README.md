@@ -206,13 +206,20 @@ Creates a signed witness with daily-salted consumer hash (`sha256(pubkey + YYYY-
 - ✅ Consumer request verification (signature + timestamp age) [IMPLEMENTED]
 - ✅ Request forwarding with consumer identity redaction [IMPLEMENTED]
 - ✅ Sliding window rate limiter [IMPLEMENTED]
-- ✅ Dual witness store (legacy + dedicated WitnessStore) [IMPLEMENTED]
-- ✅ WitnessStore: record, get, verify, list, stats, prune, export [IMPLEMENTED]
+- ⚠️ Dual witness store (legacy + dedicated WitnessStore) [IMPLEMENTED · NEEDS ALIGNMENT] — architecture defines single unified witness; code has two separate systems
+- ⚠️ WitnessStore: record, get, verify, list, stats, prune, export [IMPLEMENTED · NEEDS ALIGNMENT] — field names use snake_case (architecture uses camelCase in metering-witness module)
+- ⚠️ `createWitness()` return type [IMPLEMENTED · NEEDS ALIGNMENT] — returns inline object, architecture defines named `RelayWitness` type
 - ✅ Bootstrap registration + heartbeat + deregister [IMPLEMENTED]
 - ✅ Provider disconnect cleanup (mark offline in DB) [IMPLEMENTED]
-- ⚠️ Consumer privacy: daily-salted hash only (no per-request rotation) [PARTIAL]
-- ❌ Witness export to on-chain format [DESIGN ONLY]
-- ❌ Multi-relay witness cross-verification [DESIGN ONLY]
+- ⚠️ Consumer privacy: daily-salted hash only (no per-request rotation) [IMPLEMENTED · NEEDS ALIGNMENT]
+- ❌ Witness export to on-chain format [NOT IMPLEMENTED]
+- ❌ Multi-relay witness cross-verification [NOT IMPLEMENTED]
+
+## Code Alignment Tasks
+
+- [ ] Define named `RelayWitness` type for `createWitness()` return value
+- [ ] Align witness field names to camelCase per architecture (`request_id` → `requestId`, etc.)
+- [ ] Consolidate dual witness store into single system aligned with architecture's `WitnessRecord`
 
 ---
 

@@ -169,9 +169,9 @@ Creates a WebSocket server. Returns handle with port info.
 - ✅ Exponential backoff reconnection [IMPLEMENTED]
 - ✅ Max message size enforcement [IMPLEMENTED]
 - ✅ Stable connection reference across reconnects [IMPLEMENTED]
-- ❌ TLS certificate validation configuration [DESIGN ONLY]
-- ❌ Connection multiplexing [DESIGN ONLY]
-- ❌ Binary frame support (currently JSON only) [DESIGN ONLY]
+- ❌ TLS certificate validation configuration [NOT IMPLEMENTED]
+- ❌ Connection multiplexing [NOT IMPLEMENTED]
+- ❌ Binary frame support (currently JSON only) [NOT IMPLEMENTED]
 
 ---
 

@@ -81,19 +81,33 @@ Output: `response`, `stream_start`, `stream_chunk`, `stream_end`, or `error`.
 
 **Source:** `src/provider/index.ts`, `src/provider/metrics.ts`
 
-### Key Data Structures
+### Target Interface (from Architecture)
 
 ```ts
-// src/provider/index.ts
-export interface ProviderOptions {
+// Architecture-defined ProviderOptions (authoritative)
+interface ProviderOptions {
   wallet: Wallet;
-  relayUrl: string;
+  relayMode?: RelayMode;             // 'bootstrap' | 'static' | 'manual'
+  relayUrls?: string[];              // for static/manual modes
+  bootstrapUrl?: string;             // for bootstrap mode
   apiKeys: Array<{ provider: 'anthropic'; key: string }>;
   maxConcurrent: number;
-  proxyUrl?: string;       // LiteLLM/custom proxy support
-  proxySecret?: string;    // shared secret for proxy auth
-  healthPort?: number;     // default 9962
-  discoveryClient?: RelayDiscoveryClient;
+}
+```
+
+### Current Code Structures
+
+```ts
+// src/provider/index.ts — NEEDS ALIGNMENT with architecture
+export interface ProviderOptions {
+  wallet: Wallet;
+  relayUrl: string;                  // ⚠️ should be relayUrls?: string[] (array, optional)
+  apiKeys: Array<{ provider: 'anthropic'; key: string }>;
+  maxConcurrent: number;
+  proxyUrl?: string;                 // not in architecture (implementation detail)
+  proxySecret?: string;              // not in architecture (implementation detail)
+  healthPort?: number;               // not in architecture (implementation detail)
+  discoveryClient?: RelayDiscoveryClient;  // ⚠️ not in architecture; use relayMode+bootstrapUrl
 }
 
 export interface HandleRequestResult {
@@ -114,7 +128,7 @@ class MetricsStore {
 ### Core Flow
 
 1. **Relay connection**: connect to primary relay via WebSocket, send signed `provider_hello`
-2. **Multi-relay**: if `discoveryClient` is available, connect to up to `MULTI_RELAY_COUNT - 1` (2) additional relays
+2. **Multi-relay**: Architecture specifies `relayMode`+`relayUrls`/`bootstrapUrl` for multi-relay. Current code uses injected `discoveryClient` — needs alignment. Connects to up to `MULTI_RELAY_COUNT - 1` (2) additional relays
 3. **Request handling**: decrypt inner envelope (`nacl.box.open`), extract consumer encryption pubkey from first 32 bytes of sealed data
 4. **Upstream call**: `handleRequest()` builds Anthropic API request, handles OAuth tokens specially (Claude Code headers + system prompt injection)
 5. **Response encryption**: seal response with consumer's encryption pubkey before sending back
@@ -186,7 +200,8 @@ getMetrics(): {
 
 ## Current Implementation Status
 
-- ✅ Single + multi-relay connectivity [IMPLEMENTED]
+- ⚠️ ProviderOptions interface [IMPLEMENTED · NEEDS ALIGNMENT] — missing `relayMode`, `bootstrapUrl`; uses `relayUrl` (singular string) instead of `relayUrls` (array); uses `discoveryClient` (not in architecture); has extra fields `proxyUrl`/`proxySecret`/`healthPort` not in architecture
+- ⚠️ Single + multi-relay connectivity [IMPLEMENTED · NEEDS ALIGNMENT] — works but relay discovery pattern doesn't match architecture's `relayMode` approach
 - ✅ E2E encryption (decrypt request, encrypt response) [IMPLEMENTED]
 - ✅ Streaming + non-streaming upstream calls [IMPLEMENTED]
 - ✅ Retry with exponential backoff + jitter [IMPLEMENTED]
@@ -195,9 +210,20 @@ getMetrics(): {
 - ✅ Proxy mode (LiteLLM compatible) [IMPLEMENTED]
 - ✅ Health + metrics HTTP server [IMPLEMENTED]
 - ✅ MetricsStore with p50/p95/p99 latency [IMPLEMENTED]
-- ❌ Capacity publication to market [DESIGN ONLY]
-- ❌ Credential rotation without restart [DESIGN ONLY]
-- ❌ Multi-provider backend (only Anthropic) [DESIGN ONLY]
+- ✅ `handleRequest()` function signature [IMPLEMENTED]
+- ❌ `relayMode` relay selection logic [NOT IMPLEMENTED]
+- ❌ Capacity publication to market [NOT IMPLEMENTED]
+- ❌ Credential rotation without restart [NOT IMPLEMENTED]
+- ❌ Multi-provider backend (only Anthropic) [NOT IMPLEMENTED]
+
+## Code Alignment Tasks
+
+- [ ] Rename `relayUrl: string` → `relayUrls?: string[]` in `ProviderOptions` (`src/provider/index.ts`)
+- [ ] Add `relayMode?: RelayMode` to `ProviderOptions` (`'bootstrap'` | `'static'` | `'manual'`)
+- [ ] Add `bootstrapUrl?: string` to `ProviderOptions`
+- [ ] Remove `discoveryClient` from `ProviderOptions` — relay discovery should be internal based on `relayMode`+`bootstrapUrl`
+- [ ] Implement `relayMode` dispatch: `'bootstrap'` → discover via `bootstrapUrl`; `'static'` → connect to `relayUrls` directly; `'manual'` → operator-configured
+- [ ] Decide whether `proxyUrl`/`proxySecret`/`healthPort` should be added to architecture or kept as implementation-only extensions
 
 ---
 

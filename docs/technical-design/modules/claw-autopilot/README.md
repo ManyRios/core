@@ -99,13 +99,13 @@ No code. Planned to orchestrate wallet, discovery, provider, and relay modules. 
 
 ## Current Implementation Status
 
-- ❌ `startAutopilot()` [DESIGN ONLY]
-- ❌ OperatorIntent / AutopilotPolicy types [DESIGN ONLY]
-- ❌ Join-network flow [DESIGN ONLY]
-- ❌ Sell-capacity with policy enforcement [DESIGN ONLY]
-- ❌ Health-based pause/resume [DESIGN ONLY]
-- ❌ Reconciliation loop [DESIGN ONLY]
-- ❌ CLI commands (`veil autopilot init/join/show`) [DESIGN ONLY]
+- ❌ `startAutopilot()` [NOT IMPLEMENTED]
+- ❌ OperatorIntent / AutopilotPolicy types [NOT IMPLEMENTED]
+- ❌ Join-network flow [NOT IMPLEMENTED]
+- ❌ Sell-capacity with policy enforcement [NOT IMPLEMENTED]
+- ❌ Health-based pause/resume [NOT IMPLEMENTED]
+- ❌ Reconciliation loop [NOT IMPLEMENTED]
+- ❌ CLI commands (`veil autopilot init/join/show`) [NOT IMPLEMENTED]
 
 This module is planned for **Phase 3** (Guided Operator Automation) and **Phase 6** (Low-Touch Market Operation). No source code exists in `src/`.
 

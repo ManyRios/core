@@ -192,9 +192,9 @@ computeRelayScore(relay: RelayInfo, measuredLatencyMs: number | null): RelayScor
 - ✅ WebSocket latency measurement [IMPLEMENTED]
 - ✅ Health check (90s stale threshold) and pruning (24h) [IMPLEMENTED]
 - ✅ Region and model filtering [IMPLEMENTED]
-- ⚠️ Reputation score is static in DB, not dynamically computed from witness data [PARTIAL]
-- ❌ Relay banning/unbanning workflow [DESIGN ONLY]
-- ❌ Health check probes from bootstrap to relays [DESIGN ONLY]
+- ⚠️ Reputation score is static in DB, not dynamically computed from witness data [IMPLEMENTED · NEEDS ALIGNMENT]
+- ❌ Relay banning/unbanning workflow [NOT IMPLEMENTED]
+- ❌ Health check probes from bootstrap to relays [NOT IMPLEMENTED]
 
 ---
 

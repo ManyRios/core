@@ -177,5 +177,15 @@ CLI module exposes no programmatic API. All interaction is via `process.argv`.
 - ✅ Relay discovery listing [IMPLEMENTED]
 - ✅ UX: spinner, colors, table formatting, NO_COLOR support [IMPLEMENTED]
 - ✅ Non-interactive mode via VEIL_PASSWORD env [IMPLEMENTED]
-- ❌ `veil autopilot init/join/show` [DESIGN ONLY]
-- ❌ Interactive TUI dashboard [DESIGN ONLY]
+- ⚠️ Consumer gateway startup (`cmdUseStart`) [IMPLEMENTED · NEEDS ALIGNMENT] — creates `RelayDiscoveryClient` and passes as `discoveryClient` to gateway; should pass `relayMode`+`bootstrapUrl` instead per architecture
+- ⚠️ Provider startup (`cmdProvideStart`) [IMPLEMENTED · NEEDS ALIGNMENT] — same `discoveryClient` injection pattern; should use `relayMode`+`bootstrapUrl`
+- ⚠️ Budget config uses `defaultBudgetUsdc` / `default_budget_usdc` [IMPLEMENTED · NEEDS ALIGNMENT] — should be `defaultQuoteBudget` per architecture
+- ❌ `veil autopilot init/join/show` [NOT IMPLEMENTED]
+- ❌ Interactive TUI dashboard [NOT IMPLEMENTED]
+
+## Code Alignment Tasks
+
+- [ ] Replace `discoveryClient` injection with `relayMode`+`bootstrapUrl` in `cmdUseStart()` and `cmdProvideStart()`
+- [ ] Rename `default_budget_usdc` config key → `default_quote_budget`
+- [ ] Rename `--budget` flag semantics to align with `defaultQuoteBudget` + `quoteUnit`
+- [ ] Update config validation to accept `relayMode` instead of `relay_discovery`

@@ -141,11 +141,11 @@ See metering module for the implemented pricing functions. The dedicated pricing
 
 - ✅ Static price table with per-model pricing [IMPLEMENTED] (in metering module)
 - ✅ Cost calculation with cache token support [IMPLEMENTED] (in metering module)
-- ❌ CapacityOffer / RiskEnvelope types [DESIGN ONLY]
-- ❌ evaluateOffer() with margin and risk guards [DESIGN ONLY]
-- ❌ Deterministic pricing snapshots [DESIGN ONLY]
-- ❌ Sell-side pause/resume policy [DESIGN ONLY]
-- ❌ Quote-unit to settlement-asset mapping [DESIGN ONLY]
+- ❌ CapacityOffer / RiskEnvelope types [NOT IMPLEMENTED]
+- ❌ evaluateOffer() with margin and risk guards [NOT IMPLEMENTED]
+- ❌ Deterministic pricing snapshots [NOT IMPLEMENTED]
+- ❌ Sell-side pause/resume policy [NOT IMPLEMENTED]
+- ❌ Quote-unit to settlement-asset mapping [NOT IMPLEMENTED]
 
 ---
 

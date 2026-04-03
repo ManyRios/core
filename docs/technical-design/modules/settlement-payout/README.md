@@ -111,12 +111,12 @@ No code. Planned to consume witness records from `relay/witness.ts` WitnessStore
 
 ## Current Implementation Status
 
-- ❌ `settleWitness()` [DESIGN ONLY]
-- ❌ `buildPayouts()` [DESIGN ONLY]
-- ❌ Settlement ledger [DESIGN ONLY]
-- ❌ Payout instruction export [DESIGN ONLY]
-- ❌ Deduplication / evidence hash verification [DESIGN ONLY]
-- ❌ Quote-to-settlement asset mapping [DESIGN ONLY]
+- ❌ `settleWitness()` [NOT IMPLEMENTED]
+- ❌ `buildPayouts()` [NOT IMPLEMENTED]
+- ❌ Settlement ledger [NOT IMPLEMENTED]
+- ❌ Payout instruction export [NOT IMPLEMENTED]
+- ❌ Deduplication / evidence hash verification [NOT IMPLEMENTED]
+- ❌ Quote-to-settlement asset mapping [NOT IMPLEMENTED]
 
 This module is planned for **Phase 5** (Witness-Backed Settlement). No source code exists in `src/`.
 

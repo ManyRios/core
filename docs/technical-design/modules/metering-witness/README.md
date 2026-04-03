@@ -113,10 +113,50 @@ Output: quote estimates and verifiable witness records.
 
 **Source:** `src/metering/index.ts`, `src/metering/types.ts`, `src/metering/normalize.ts`, `src/metering/pricing.ts`, `src/metering/witness.ts`
 
-### Key Data Structures
+### Target Interface (from Architecture)
 
 ```ts
-// src/metering/types.ts
+// Architecture-defined types (authoritative)
+type QuoteUnit = 'usd_estimate';
+
+interface PricingSnapshot {
+  version: string;
+  model: string;
+  quoteUnit: QuoteUnit;
+}
+
+interface QuoteEstimate {
+  total: number;
+  quoteUnit: QuoteUnit;
+}
+
+interface WitnessRecord {
+  requestId: string;
+  providerId: string;
+  relayId: string;
+  model: string;
+  usage: NormalizedUsage;
+  pricingVersion: string;
+  quoteUnit: QuoteUnit;
+  completionStatus: 'success' | 'error' | 'aborted';
+  evidenceHash: string;
+  dedupeKey: string;
+  relaySignature: string;
+}
+
+class WitnessStore {
+  record(...): WitnessRecord;
+  verify(...): boolean;
+  export(...): WitnessRecord[];
+}
+
+function buildQuoteEstimate(usage: NormalizedUsage, pricing: PricingSnapshot): QuoteEstimate;
+```
+
+### Current Code Structures
+
+```ts
+// src/metering/types.ts — NormalizedUsage matches architecture ✅
 interface NormalizedUsage {
   input: number;
   output: number;
@@ -124,15 +164,16 @@ interface NormalizedUsage {
   cacheWrite?: number;
 }
 
+// src/metering/types.ts — implementation-specific (no architecture equivalent)
 interface PriceConfig {
   model: string;
   inputPerM: number;      // USD per 1M input tokens
-  outputPerM: number;      // USD per 1M output tokens
+  outputPerM: number;
   cacheReadPerM?: number;
   cacheWritePerM?: number;
 }
 
-interface CostBreakdown {
+interface CostBreakdown {  // ⚠️ no quoteUnit; architecture uses QuoteEstimate instead
   inputCost: number;
   outputCost: number;
   cacheReadCost?: number;
@@ -140,7 +181,24 @@ interface CostBreakdown {
   totalCost: number;
 }
 
-// Provider-specific usage formats
+// src/relay/witness.ts — ⚠️ NEEDS ALIGNMENT: snake_case, flat tokens, missing architecture fields
+interface WitnessRecord {      // relay-layer version
+  request_id: string;          // ⚠️ should be requestId
+  consumer_pubkey: string;
+  provider_pubkey: string;     // ⚠️ should be providerId
+  model: string;
+  input_tokens: number;        // ⚠️ should be usage: NormalizedUsage
+  output_tokens: number;
+  cache_read_tokens?: number;
+  cache_write_tokens?: number;
+  duration_ms: number;
+  timestamp: number;
+  relay_pubkey: string;        // ⚠️ should be relayId
+  relay_signature: string;     // ⚠️ should be relaySignature
+  // MISSING: pricingVersion, quoteUnit, completionStatus, evidenceHash, dedupeKey
+}
+
+// Provider-specific usage formats (implementation detail, not in architecture)
 interface AnthropicUsage { input_tokens; output_tokens; cache_read_input_tokens?; cache_creation_input_tokens? }
 interface OpenAIUsage { prompt_tokens; completion_tokens; prompt_tokens_details?.cached_tokens? }
 interface GoogleUsage { promptTokenCount; candidatesTokenCount; cachedContentTokenCount? }
@@ -169,7 +227,7 @@ type AnyUsage = AnthropicUsage | OpenAIUsage | GoogleUsage | Record<string, unkn
 - `verifyWitness()`: verifies HMAC signature
 - `generateWitnessBatch()`: parallel witness generation
 - `serializeWitness()` / `deserializeWitness()`: JSON serialization
-- **Note**: This is the metering-layer witness (HMAC-based). The relay-layer `WitnessStore` uses Ed25519 signatures. These are separate systems.
+- **Note**: This is the metering-layer witness (HMAC-based). The relay-layer `WitnessStore` uses Ed25519 signatures. Architecture defines a unified `WitnessRecord` with camelCase fields, `pricingVersion`, `quoteUnit`, `completionStatus`, `evidenceHash`, `dedupeKey` — neither implementation matches this yet.
 
 ### Error Handling
 
@@ -215,17 +273,33 @@ deserializeWitness(data: string): Witness
 
 ## Current Implementation Status
 
+- ✅ `NormalizedUsage` interface [IMPLEMENTED] — matches architecture
+- ✅ `normalizeUsage()` function [IMPLEMENTED]
 - ✅ Multi-provider usage normalization (Anthropic, OpenAI, Google + fallback) [IMPLEMENTED]
 - ✅ Batch normalization and aggregation [IMPLEMENTED]
 - ✅ Per-model pricing with cache token support [IMPLEMENTED]
 - ✅ Cost formatting utilities [IMPLEMENTED]
-- ✅ HMAC-SHA256 witness generation and verification [IMPLEMENTED]
-- ✅ Batch witness generation [IMPLEMENTED]
-- ✅ Witness serialization/deserialization [IMPLEMENTED]
-- ⚠️ Price table is static (8 models), not synced with upstream pricing [PARTIAL]
-- ⚠️ Metering witness uses HMAC, relay witness uses Ed25519 — two separate systems [PARTIAL]
-- ❌ Deterministic pricing snapshots with versioning [DESIGN ONLY]
-- ❌ Quote-unit / settlement-asset separation [DESIGN ONLY]
+- ⚠️ Metering witness (HMAC-based) [IMPLEMENTED · NEEDS ALIGNMENT] — uses HMAC-SHA256 instead of Ed25519; does not produce architecture-defined `WitnessRecord` fields (`pricingVersion`, `quoteUnit`, `completionStatus`, `evidenceHash`, `dedupeKey`)
+- ⚠️ Relay witness (`src/relay/witness.ts`) [IMPLEMENTED · NEEDS ALIGNMENT] — uses snake_case field names, flat token counts instead of `NormalizedUsage`, missing `pricingVersion`/`quoteUnit`/`completionStatus`/`evidenceHash`/`dedupeKey`
+- ⚠️ Price table is static (8 models), not versioned [IMPLEMENTED · NEEDS ALIGNMENT]
+- ❌ `PricingSnapshot` type with `version` + `quoteUnit` [NOT IMPLEMENTED]
+- ❌ `QuoteEstimate` type [NOT IMPLEMENTED]
+- ❌ `buildQuoteEstimate()` function [NOT IMPLEMENTED]
+- ❌ `WitnessStore` class (architecture-defined: `record()`, `verify()`, `export()`) [NOT IMPLEMENTED] — relay has a `WitnessStore` class but with different interface
+- ❌ Deterministic pricing snapshots with versioning [NOT IMPLEMENTED]
+- ❌ Quote-unit / settlement-asset separation [NOT IMPLEMENTED]
+
+## Code Alignment Tasks
+
+- [ ] Create `PricingSnapshot` type with `version`, `model`, `quoteUnit` fields
+- [ ] Create `QuoteEstimate` type with `total`, `quoteUnit` fields
+- [ ] Implement `buildQuoteEstimate(usage, pricing)` function
+- [ ] Unify witness record format: rename relay `WitnessRecord` fields to camelCase (`request_id` → `requestId`, `provider_pubkey` → `providerId`, `relay_pubkey` → `relayId`, `relay_signature` → `relaySignature`)
+- [ ] Replace flat token fields (`input_tokens`, `output_tokens`, etc.) with `usage: NormalizedUsage` in `WitnessRecord`
+- [ ] Add `pricingVersion`, `quoteUnit`, `completionStatus`, `evidenceHash`, `dedupeKey` to `WitnessRecord`
+- [ ] Align `WitnessStore` class interface to architecture: `record()`, `verify()`, `export()`
+- [ ] Add version string to price table for `PricingSnapshot` support
+- [ ] Decide whether to unify metering-layer HMAC witness with relay-layer Ed25519 witness into single architecture-defined `WitnessRecord`
 
 ---
 

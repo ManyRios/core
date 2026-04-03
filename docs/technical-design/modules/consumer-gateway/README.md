@@ -86,29 +86,38 @@ Output: OpenAI-compatible response.
 
 **Source:** `src/consumer/index.ts`, `src/consumer/budget.ts`, `src/consumer/anthropic-stream.ts`
 
-### Key Data Structures
+### Target Interface (from Architecture)
 
 ```ts
-// src/consumer/index.ts
+// Architecture-defined GatewayOptions (authoritative)
+interface GatewayOptions {
+  port: number;
+  wallet: Wallet;
+  relayMode?: RelayMode;             // 'bootstrap' | 'static' | 'manual'
+  relayUrl?: string;                 // optional — required only for 'static'/'manual'
+  bootstrapUrl?: string;             // bootstrap discovery endpoint
+  apiKey?: string;
+  defaultQuoteBudget?: number;       // max quote per request
+  quoteUnit?: QuoteUnit;             // 'usd_estimate'
+}
+```
+
+### Current Code Structures
+
+```ts
+// src/consumer/index.ts — NEEDS ALIGNMENT with architecture
 export interface GatewayOptions {
   port: number;
   wallet: Wallet;
-  relayUrl: string;
+  relayUrl: string;                  // ⚠️ should be optional, relayMode determines source
   apiKey?: string;
-  discoveryClient?: RelayDiscoveryClient;
-  defaultBudgetUsdc?: number;
+  discoveryClient?: RelayDiscoveryClient;  // ⚠️ not in architecture; relay discovery should use relayMode+bootstrapUrl
+  defaultBudgetUsdc?: number;        // ⚠️ rename to defaultQuoteBudget
 }
-
-// Pending request tracking (in-memory Map)
-const pendingRequests = new Map<string, {
-  resolve: (value: unknown) => void;
-  reject: (reason: Error) => void;
-  onChunk?: (msg: WsMessage) => void;
-}>();
 
 // src/consumer/budget.ts
 export interface BudgetConfig {
-  max_cost_usdc: number;       // default $1.00
+  max_cost_usdc: number;       // default $1.00 — ⚠️ consider quoteUnit alignment
   max_duration_ms?: number;    // default 120_000 (2 min)
 }
 
@@ -123,11 +132,11 @@ export interface BudgetTracker {
 
 ### Core Flow
 
-1. **Relay connection**: `connectRelay()` resolves URL via `RelayDiscoveryClient` (if configured) or uses static URL. Maintains excluded relay list for failover.
+1. **Relay connection**: Architecture specifies `relayMode` to determine relay source: `'bootstrap'` (discover via bootstrapUrl), `'static'` (use relayUrl directly), or `'manual'` (operator-specified). Current code uses `RelayDiscoveryClient` object injection instead — needs alignment. Maintains excluded relay list for failover.
 2. **Provider selection**: `selectProvider(model, excludeIds)` filters by model + capacity > 0. Falls back to random selection if exclusion list exhausts all.
 3. **Request building**: `buildRequest()` seals inner plaintext with `nacl.box` using provider's encryption pubkey, signs outer envelope with `Ed25519`.
 4. **Retry logic**: Up to 3 retries with exponential backoff (1s, 2s, 4s). Non-retryable errors: `invalid_request`, `rate_limit`, `invalid_signature`, `decrypt_failed`, mid-stream errors.
-5. **Budget guard**: `createBudgetTracker()` uses `calculateCostByModel()` from metering module. Streaming chunks estimate ~1 output token per 4 chars. Cost check on every chunk.
+5. **Budget guard**: `createBudgetTracker()` uses `calculateCostByModel()` from metering module. Streaming chunks estimate ~1 output token per 4 chars. Cost check on every chunk. Architecture specifies `quoteUnit` for budget tracking — current code uses raw USDC amounts without explicit unit tagging.
 
 ### State Management
 
@@ -155,6 +164,7 @@ export interface BudgetTracker {
 ### `startGateway(options: GatewayOptions): Promise<{ close(): Promise<void>; port: number }>`
 
 Starts HTTP server (Hono + @hono/node-server) and connects to relay.
+Accepts architecture-defined `GatewayOptions` with `relayMode`, `bootstrapUrl`, `defaultQuoteBudget`, `quoteUnit`.
 
 ### Request Body Extensions
 
@@ -163,7 +173,7 @@ Starts HTTP server (Hono + @hono/node-server) and connects to relay.
 {
   ...standardOpenAIChatRequest,
   budget?: {
-    max_cost_usdc?: number;    // override per-request
+    max_cost?: number;         // override per-request (in quoteUnit)
     max_duration_ms?: number;
   }
 }
@@ -171,7 +181,7 @@ Starts HTTP server (Hono + @hono/node-server) and connects to relay.
 
 ### Response Headers
 
-- `x-veil-budget-remaining`: remaining budget in USDC (6 decimal places)
+- `x-veil-budget-remaining`: remaining budget in quoteUnit (6 decimal places)
 
 ## Integration Protocol
 
@@ -188,12 +198,27 @@ Starts HTTP server (Hono + @hono/node-server) and connects to relay.
 - ✅ `/health` endpoint [IMPLEMENTED]
 - ✅ Bearer token auth with constant-time comparison [IMPLEMENTED]
 - ✅ E2E encryption (nacl.box seal/open) [IMPLEMENTED]
-- ✅ Per-request budget guard (cost + timeout) [IMPLEMENTED]
+- ⚠️ GatewayOptions interface [IMPLEMENTED · NEEDS ALIGNMENT] — missing `relayMode`, `bootstrapUrl`, `quoteUnit`; uses `discoveryClient` (not in architecture); `defaultBudgetUsdc` should be `defaultQuoteBudget`; `relayUrl` should be optional
+- ⚠️ Per-request budget guard (cost + timeout) [IMPLEMENTED · NEEDS ALIGNMENT] — works but lacks `quoteUnit` tagging
+- ⚠️ Relay discovery failover [IMPLEMENTED · NEEDS ALIGNMENT] — uses injected `RelayDiscoveryClient` instead of `relayMode`+`bootstrapUrl` pattern
+- ⚠️ Streaming budget tracking uses heuristic (~1 token per 4 chars) [IMPLEMENTED · NEEDS ALIGNMENT]
 - ✅ Retry with exponential backoff (up to 3 retries) [IMPLEMENTED]
-- ✅ Relay discovery failover via `RelayDiscoveryClient` [IMPLEMENTED]
-- ⚠️ Streaming budget tracking uses heuristic (~1 token per 4 chars) [PARTIAL]
-- ❌ Multi-relay simultaneous connections [DESIGN ONLY]
-- ❌ Request-level Provider preference or pinning [DESIGN ONLY]
+- ❌ `relayMode` relay selection logic (`'bootstrap'` | `'static'` | `'manual'`) [NOT IMPLEMENTED]
+- ❌ `quoteUnit` support in budget tracking [NOT IMPLEMENTED]
+- ❌ Multi-relay simultaneous connections [NOT IMPLEMENTED]
+- ❌ Request-level Provider preference or pinning [NOT IMPLEMENTED]
+
+## Code Alignment Tasks
+
+- [ ] Rename `defaultBudgetUsdc` → `defaultQuoteBudget` in `src/consumer/index.ts`
+- [ ] Add `relayMode: RelayMode` field to `GatewayOptions` (`'bootstrap'` | `'static'` | `'manual'`)
+- [ ] Add `bootstrapUrl?: string` to `GatewayOptions`
+- [ ] Add `quoteUnit?: QuoteUnit` to `GatewayOptions`
+- [ ] Make `relayUrl` optional in `GatewayOptions` (only required for `'static'`/`'manual'` modes)
+- [ ] Remove `discoveryClient` from `GatewayOptions` — relay discovery should be internal based on `relayMode`+`bootstrapUrl`
+- [ ] Implement `relayMode` dispatch in `connectRelay()`: `'bootstrap'` → create internal discovery client from `bootstrapUrl`; `'static'` → use `relayUrl` directly; `'manual'` → operator-configured
+- [ ] Add `quoteUnit` to `BudgetConfig` and budget tracking responses
+- [ ] Update budget response header `x-veil-budget-remaining` to include unit context
 
 ---
 

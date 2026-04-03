@@ -197,9 +197,9 @@ fromHex(hex: string): Uint8Array
 - ✅ E2E seal/open with nacl.box [IMPLEMENTED]
 - ✅ Strict key/hex validation [IMPLEMENTED]
 - ✅ File permissions (0o600) [IMPLEMENTED]
-- ⚠️ KDF cost parameter configurable but defaults to test value (N=2^14) [PARTIAL]
-- ❌ Hardware key / HSM support [DESIGN ONLY]
-- ❌ Key rotation without identity change [DESIGN ONLY]
+- ⚠️ KDF cost parameter configurable but defaults to test value (N=2^14) [IMPLEMENTED · NEEDS ALIGNMENT]
+- ❌ Hardware key / HSM support [NOT IMPLEMENTED]
+- ❌ Key rotation without identity change [NOT IMPLEMENTED]
 
 ---
 

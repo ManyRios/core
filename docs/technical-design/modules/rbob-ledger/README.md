@@ -183,9 +183,9 @@ class RbobLedger {
 - ✅ JSON export with totals [IMPLEMENTED]
 - ✅ Multiplier support [IMPLEMENTED]
 - ✅ PR number tracking [IMPLEMENTED]
-- ❌ On-chain token claim submission [DESIGN ONLY]
-- ❌ Multi-admin signature support [DESIGN ONLY]
-- ❌ Contributor identity linking to wallet pubkeys [DESIGN ONLY]
+- ❌ On-chain token claim submission [NOT IMPLEMENTED]
+- ❌ Multi-admin signature support [NOT IMPLEMENTED]
+- ❌ Contributor identity linking to wallet pubkeys [NOT IMPLEMENTED]
 
 ---
 
