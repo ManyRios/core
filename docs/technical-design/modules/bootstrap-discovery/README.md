@@ -64,3 +64,134 @@ Output: active Relay inventory and best-Relay selections.
 
 - calls: `crypto`, `logger`
 - called by: `consumer`, `provider`, Relay operators
+
+---
+
+## Implementation Details
+
+**Source:** `src/bootstrap/server.ts`, `src/discovery/client.ts`, `src/discovery/types.ts`
+
+### Key Data Structures
+
+```ts
+// src/discovery/types.ts
+interface RelayInfo {
+  relay_pubkey: string;
+  relay_id: string;
+  endpoint: string;
+  models_supported: string[];
+  fee_pct: number;
+  region: string;
+  capacity: number;
+  active_providers: number;
+  reputation_score: number;
+  uptime_pct: number;
+  witness_count: number;
+  health_latency_ms: number | null;
+  version: string;
+}
+
+interface RelayScore {
+  relay: RelayInfo;
+  score: number;
+  breakdown: { latency; fee; uptime; reputation; exploration };
+}
+
+interface DiscoveryConfig {
+  bootstrapUrl: string;
+  cacheTtlMs?: number;    // default 60_000
+  maxRelays?: number;     // default 10
+}
+
+// src/bootstrap/server.ts — DB schema
+// relay_registry table: relay_pubkey (PK), relay_id, endpoint (UNIQUE),
+// models_supported, fee_pct, region, capacity, version, active_providers,
+// active_requests, uptime_seconds, registered_at, last_heartbeat,
+// status ('online'|'stale'|'offline'|'banned'), witness_count,
+// reputation_score, total_uptime_pct, ban_reason, ban_until
+```
+
+### Bootstrap Server (`src/bootstrap/server.ts`)
+
+- **Hono HTTP app** with 5 endpoints
+- **Signature verification**: Ed25519 on deterministic JSON payloads (`buildRegisterSignable`, `buildHeartbeatSignable`)
+- **Timestamp tolerance**: ±5 min for registration
+- **Health check**: `runHealthCheck()` marks relays offline if no heartbeat for >90s
+- **Pruning**: `pruneOfflineRelays()` deletes offline relays after 24h
+- **Duplicate endpoint protection**: UNIQUE constraint on `endpoint` column
+
+### Discovery Client (`src/discovery/client.ts`)
+
+- **Cache**: in-memory `{ relays, fetchedAt }` with configurable TTL (default 60s)
+- **Scoring**: weighted multi-factor score (0-100 per dimension):
+  - latency (35%): 100 for ≤50ms, 0 for ≥500ms, linear interpolation
+  - fee (25%): 100 for 0%, 0 for ≥10%
+  - uptime (20%): direct percentage
+  - reputation (10%): `log10(witness_count + 1) × 33.3`, capped at 100
+  - exploration (10%): bonus for new relays with <100 witnesses
+- **Latency measurement**: WebSocket connect time via `pingRelay()`, falls back to 200ms if ws unavailable
+- **Region filtering**: prefix match on `region` field
+
+### Error Handling
+
+- Invalid signature → 401 `invalid_signature`
+- Missing fields → 400 `missing_fields`
+- Timestamp expired → 400 `timestamp_expired`
+- Duplicate endpoint → 409 `duplicate_endpoint`
+- Relay not found (heartbeat/delete) → 404
+- Bootstrap fetch failure → thrown Error with status code
+
+## API Specification
+
+### Bootstrap Server Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/v1/relays/register` | Ed25519 sig | Register/update relay |
+| POST | `/v1/relays/heartbeat` | Ed25519 sig | Update relay state |
+| GET | `/v1/relays` | None | List online relays (scored) |
+| DELETE | `/v1/relays/:pubkey` | None | Deregister relay |
+| GET | `/health` | None | Bootstrap health + relay count |
+
+### `createBootstrapApp(db: Database): Hono`
+
+### Discovery Client
+
+```ts
+class RelayDiscoveryClient {
+  constructor(config: DiscoveryConfig)
+  fetchRelays(region?: string): Promise<RelayInfo[]>
+  selectRelay(exclude?: string[]): Promise<RelayScore | null>
+  refreshCache(): Promise<RelayInfo[]>
+}
+```
+
+### Exported Utilities
+
+```ts
+initDatabase(dbPath?: string): Database.Database
+runHealthCheck(db: Database, now?: number): void
+pruneOfflineRelays(db: Database, now?: number): void
+computeRelayScore(relay: RelayInfo, measuredLatencyMs: number | null): RelayScore
+```
+
+## Integration Protocol
+
+- **Called by Consumer**: `RelayDiscoveryClient.selectRelay()` for relay failover in gateway
+- **Called by Provider**: `RelayDiscoveryClient.fetchRelays()` for multi-relay connectivity
+- **Called by Relay**: HTTP POST to bootstrap for registration + heartbeat (every 30s)
+- **Response format**: `{ relays: RelayInfo[], cache_ttl_seconds: 60, bootstrap_version: '0.1.0' }`
+- **Config**: `DEFAULT_BOOTSTRAP_URL = 'https://bootstrap.runveil.io'`, `RELAY_DISCOVERY_CACHE_TTL_MS = 60_000`, `RELAY_DISCOVERY_MAX_RELAYS = 20`
+
+## Current Implementation Status
+
+- ✅ Bootstrap server with register, heartbeat, list, delete, health [IMPLEMENTED]
+- ✅ Ed25519 signature verification for relay registration [IMPLEMENTED]
+- ✅ Discovery client with caching and TTL [IMPLEMENTED]
+- ✅ Multi-factor relay scoring (latency, fee, uptime, reputation, exploration) [IMPLEMENTED]
+- ✅ WebSocket latency measurement [IMPLEMENTED]
+- ✅ Health check (90s stale threshold) and pruning (24h) [IMPLEMENTED]
+- ✅ Region and model filtering [IMPLEMENTED]
+- ⚠️ Reputation score is static in DB, not dynamically computed from witness data [PARTIAL]
+- ❌ Relay banning/unbanning workflow [DESIGN ONLY]
+- ❌ Health check probes from bootstrap to relays [DESIGN ONLY]

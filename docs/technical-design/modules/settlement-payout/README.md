@@ -94,3 +94,28 @@ Output: settlement ledger entries, balances, payout-ready exports.
 
 - calls: `metering-witness`, `pricing-risk-policy`
 - called by: `cli`, `claw-autopilot`
+
+---
+
+## Implementation Details
+
+**Source:** No implementation exists.
+
+## API Specification
+
+No code. See architecture section above for planned interface.
+
+## Integration Protocol
+
+No code. Planned to consume witness records from `relay/witness.ts` WitnessStore and pricing snapshots from a future pricing-risk-policy module.
+
+## Current Implementation Status
+
+- ❌ `settleWitness()` [DESIGN ONLY]
+- ❌ `buildPayouts()` [DESIGN ONLY]
+- ❌ Settlement ledger [DESIGN ONLY]
+- ❌ Payout instruction export [DESIGN ONLY]
+- ❌ Deduplication / evidence hash verification [DESIGN ONLY]
+- ❌ Quote-to-settlement asset mapping [DESIGN ONLY]
+
+This module is planned for **Phase 5** (Witness-Backed Settlement). No source code exists in `src/`.

@@ -82,3 +82,29 @@ Output: running node state, policy actions, pause or resume decisions, automatio
 
 - calls: `wallet-identity`, `bootstrap-discovery`, `provider-engine`, `relay`, `pricing-risk-policy`, `settlement-payout`
 - called by: `cli`
+
+---
+
+## Implementation Details
+
+**Source:** No implementation exists.
+
+## API Specification
+
+No code. See architecture section above for planned interface.
+
+## Integration Protocol
+
+No code. Planned to orchestrate wallet, discovery, provider, and relay modules. CLI would expose `veil autopilot init/join/show` commands.
+
+## Current Implementation Status
+
+- ❌ `startAutopilot()` [DESIGN ONLY]
+- ❌ OperatorIntent / AutopilotPolicy types [DESIGN ONLY]
+- ❌ Join-network flow [DESIGN ONLY]
+- ❌ Sell-capacity with policy enforcement [DESIGN ONLY]
+- ❌ Health-based pause/resume [DESIGN ONLY]
+- ❌ Reconciliation loop [DESIGN ONLY]
+- ❌ CLI commands (`veil autopilot init/join/show`) [DESIGN ONLY]
+
+This module is planned for **Phase 3** (Guided Operator Automation) and **Phase 6** (Low-Touch Market Operation). No source code exists in `src/`.
